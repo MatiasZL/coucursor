@@ -267,7 +267,7 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Toggle("Idle breathing", isOn: $state.idleBreathing)
-                Text("Subtle breath animation in the resting strip when eye-tracking is off.")
+                Text("Subtle breath in the resting strip when eye-tracking is off (low fps). Off = ~0 % CPU when hidden.")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Toggle("Peek on music track change", isOn: $state.peekOnMusic)

@@ -672,33 +672,36 @@ final class IslandWindowController: NSWindowController {
         // Prefer revealBriefly whenever hidden so Stay collapsed / Quiet / Focus still show the track.
         NotificationCenter.default.addObserver(forName: .musicReveal, object: nil, queue: .main) { [weak self] note in
             guard let self else { return }
-            guard AppState.shared.peekOnMusic else { return }
-            self.silentNextReveal = true
-            defer { self.silentNextReveal = false }
+            // Observer closure is Sendable; queue is .main — hop onto the actor synchronously.
+            MainActor.assumeIsolated {
+                guard AppState.shared.peekOnMusic else { return }
+                self.silentNextReveal = true
+                if self.wasInIsland {
+                    // Cursor is on the island — grow/keep compact, never arm a timed hide under it.
+                    if self.fsm.state == .hidden { self.fsm.mouseEntered() }
+                    self.silentNextReveal = false
+                    return
+                }
 
-            if self.wasInIsland {
-                // Cursor is on the island — grow/keep compact, never arm a timed hide under it.
-                if self.fsm.state == .hidden { self.fsm.mouseEntered() }
-                return
+                #if !APPSTORE
+                let title = (note.object as? String) ?? ""
+                let compactW = islandSize(mode: .compact, view: .overview,
+                                          nw: AppState.shared.notchWidth,
+                                          nh: AppState.shared.notchHeight).0
+                let seconds = CompactInfoBanner.musicPeekDuration(title: title, islandW: compactW)
+                #else
+                let seconds: TimeInterval = 2.2
+                #endif
+
+                if self.fsm.state == .hidden || AppState.shared.stayCollapsedUntilHover {
+                    // Timed compact peek from the smallest strip (or refresh if already peeking).
+                    self.fsm.revealBriefly(seconds: seconds)
+                } else if self.state.mode == .hidden {
+                    self.fsm.reveal()
+                }
+                // Already compact/expanded: ticker updates in place — no size animation needed.
+                self.silentNextReveal = false
             }
-
-            #if !APPSTORE
-            let title = (note.object as? String) ?? ""
-            let compactW = islandSize(mode: .compact, view: .overview,
-                                      nw: AppState.shared.notchWidth,
-                                      nh: AppState.shared.notchHeight).0
-            let seconds = CompactInfoBanner.musicPeekDuration(title: title, islandW: compactW)
-            #else
-            let seconds: TimeInterval = 2.2
-            #endif
-
-            if self.fsm.state == .hidden || AppState.shared.stayCollapsedUntilHover {
-                // Timed compact peek from the smallest strip (or refresh if already peeking).
-                self.fsm.revealBriefly(seconds: seconds)
-            } else if self.state.mode == .hidden {
-                self.fsm.reveal()
-            }
-            // Already compact/expanded: ticker updates in place — no size animation needed.
         }
 
         // Collapse requests from views (OK button, etc.)

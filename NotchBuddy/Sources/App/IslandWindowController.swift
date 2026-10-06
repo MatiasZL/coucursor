@@ -188,8 +188,14 @@ final class IslandWindowController: NSWindowController {
                 // so setting view while already compact won't trigger a spurious open animation.
                 self.setMode(.compact)
                 if from == .coucou { self.state.view = self.defaultView() }
-                // Start 60s hide timer if mouse is not currently over the island
-                if !self.wasInIsland { self.fsm.mouseLeft() }
+                // Arm the hide timer only when compact appeared without a hover enter.
+                // `mouseEntered` also goes hidden→petit while `wasInIsland` is still false
+                // (updated after the call) — calling mouseLeft there scheduled a 0.6s hide
+                // under the cursor and made the notch open/close in a loop.
+                // `reveal` / `revealBriefly` schedule their own timers.
+                if from != .hidden && !self.wasInIsland {
+                    self.fsm.mouseLeft()
+                }
 
             case .home:
                 self.expand(to: self.defaultView())
@@ -267,6 +273,10 @@ final class IslandWindowController: NSWindowController {
             if fsm.state == .coucou {
                 NotificationCenter.default.post(name: .greetingHover, object: nil)
             }
+            fsm.mouseEntered()
+        } else if inIsland && wasInIsland
+                    && fsm.state == .hidden && state.mode == .hidden {
+            // A hide timer collapsed us while the cursor never left — peek again.
             fsm.mouseEntered()
         }
         if !inIsland && wasInIsland {
@@ -664,7 +674,10 @@ final class IslandWindowController: NSWindowController {
             guard let self else { return }
             guard AppState.shared.peekOnMusic else { return }
             self.silentNextReveal = true
-            if AppState.shared.stayCollapsedUntilHover {
+            if self.wasInIsland {
+                // Cursor is on the island — never arm a peek-hide timer under it.
+                if self.fsm.state == .hidden { self.fsm.mouseEntered() }
+            } else if AppState.shared.stayCollapsedUntilHover {
                 #if !APPSTORE
                 let title = (note.object as? String) ?? ""
                 let compactW = islandSize(mode: .compact, view: .overview,

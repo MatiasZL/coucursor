@@ -117,6 +117,23 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(idleBreathing, forKey: "idleBreathing") }
     }
 
+    /// Peek compact strip on Spotify / Music track change.
+    @Published var peekOnMusic: Bool = true {
+        didSet { UserDefaults.standard.set(peekOnMusic, forKey: "peekOnMusic") }
+    }
+    /// Force-expand finished agent view (vs badge-only when unfocused).
+    @Published var autoExpandFinished: Bool = true {
+        didSet { UserDefaults.standard.set(autoExpandFinished, forKey: "autoExpandFinished") }
+    }
+    /// Force-expand live programming / diff editor.
+    @Published var autoExpandProgramming: Bool = true {
+        didSet { UserDefaults.standard.set(autoExpandProgramming, forKey: "autoExpandProgramming") }
+    }
+    /// Reveal / badge pulse for CI and deploy events.
+    @Published var autoExpandCI: Bool = true {
+        didSet { UserDefaults.standard.set(autoExpandCI, forKey: "autoExpandCI") }
+    }
+
     /// Path pinned from the programming view (re-opened on next edit of that file).
     @Published var pinnedDiffPath: String? = nil {
         didSet { UserDefaults.standard.set(pinnedDiffPath, forKey: "pinnedDiffPath") }
@@ -127,20 +144,41 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(hasSeenBehaviorTips, forKey: "hasSeenBehaviorTips") }
     }
 
+    /// End-of-day tip shown once per calendar day (yyyy-MM-dd).
+    @Published var lastEODTipDay: String = "" {
+        didSet { UserDefaults.standard.set(lastEODTipDay, forKey: "lastEODTipDay") }
+    }
+
     func applyBehaviorPreset(_ preset: BehaviorPreset) {
         switch preset {
         case .quiet:
             idleEyeTracking = false
             stayCollapsedUntilHover = true
             idleBreathing = false
+            peekOnMusic = false
+            autoExpandFinished = false
+            autoExpandProgramming = false
+            autoExpandCI = false
         case .alive:
             idleEyeTracking = true
             stayCollapsedUntilHover = false
             idleBreathing = true
+            peekOnMusic = true
+            autoExpandFinished = true
+            autoExpandProgramming = true
+            autoExpandCI = true
+        case .focus:
+            idleEyeTracking = false
+            stayCollapsedUntilHover = true
+            idleBreathing = false
+            peekOnMusic = false
+            autoExpandFinished = false
+            autoExpandProgramming = false
+            autoExpandCI = false
         }
     }
 
-    enum BehaviorPreset { case quiet, alive }
+    enum BehaviorPreset { case quiet, alive, focus }
 
     /// Summarize session diffs for a pill: "+42 −11 in 3 files".
     func sessionDiffSummary(for pillId: String) -> String? {
@@ -371,6 +409,26 @@ final class AppState: ObservableObject {
         // nextDiffId intentionally NOT reset — ids remain unique across sessions
     }
 
+    /// Keep diffs around after SessionEnd so jump-to-file / recent files still work for ~1h.
+    func scheduleSoftClearSessionDiffs(for pillId: String) {
+        resetSessionDiffTimer(for: pillId)
+    }
+
+    /// Last known file path for ⌃⌥E: pinned → latest session diff → Today history.
+    func lastOpenableFilePath() -> String? {
+        if let pinned = pinnedDiffPath, FileManager.default.fileExists(atPath: pinned) {
+            return pinned
+        }
+        for diffs in sessionDiffs.values {
+            if let last = diffs.last, FileManager.default.fileExists(atPath: last.path) {
+                return last.path
+            }
+        }
+        return SessionHistoryStore.shared.recentFilePaths.first {
+            FileManager.default.fileExists(atPath: $0)
+        }
+    }
+
     private func resetSessionDiffTimer(for pillId: String) {
         sessionDiffTimers[pillId]?.cancel()
         let work = DispatchWorkItem { [weak self] in
@@ -439,10 +497,15 @@ final class AppState: ObservableObject {
         if let v = ud.object(forKey: "idleBreathing") as? Bool {
             idleBreathing = v
         }
+        if let v = ud.object(forKey: "peekOnMusic") as? Bool { peekOnMusic = v }
+        if let v = ud.object(forKey: "autoExpandFinished") as? Bool { autoExpandFinished = v }
+        if let v = ud.object(forKey: "autoExpandProgramming") as? Bool { autoExpandProgramming = v }
+        if let v = ud.object(forKey: "autoExpandCI") as? Bool { autoExpandCI = v }
         pinnedDiffPath = ud.string(forKey: "pinnedDiffPath")
         if let v = ud.object(forKey: "hasSeenBehaviorTips") as? Bool {
             hasSeenBehaviorTips = v
         }
+        lastEODTipDay = ud.string(forKey: "lastEODTipDay") ?? ""
         // Migrate old 60s default → 15s
         if let v = ud.object(forKey: "autoCloseInterval") as? Double {
             autoCloseInterval = (v == 60) ? 15 : v
@@ -883,4 +946,170 @@ struct ChatMessage: Identifiable, Equatable {
     let id = UUID()
     let role: ChatRole
     var content: String   // var for streaming updates
+}
+
+// MARK: - Today session history (Application Support JSON)
+
+/// One finished agent session persisted for the Today pulse / history strip.
+struct FinishedSession: Codable, Equatable, Identifiable {
+    var id: String
+    var pillId: String
+    var name: String
+    var endedAt: Date
+    var finalLine: String?
+    var summary: String?          // "+N −M in K files"
+    var filePaths: [String]       // up to 5
+    var outcome: String           // "ok" | "error"
+
+    var addedRemoved: (added: Int, removed: Int)? {
+        guard let summary else { return nil }
+        let parts = summary.split(separator: " ")
+        guard parts.count >= 2,
+              let a = Int(parts[0].trimmingCharacters(in: CharacterSet(charactersIn: "+"))),
+              let r = Int(parts[1].trimmingCharacters(in: CharacterSet(charactersIn: "−-")))
+        else { return nil }
+        return (a, abs(r))
+    }
+}
+
+/// Rolling local store of finished sessions. No cloud / telemetry.
+@MainActor
+final class SessionHistoryStore: ObservableObject {
+    static let shared = SessionHistoryStore()
+
+    @Published private(set) var sessions: [FinishedSession] = []
+
+    private let maxEntries = 30
+    private let maxAge: TimeInterval = 36 * 3600
+
+    private var fileURL: URL {
+        HookServer.supportDir.appendingPathComponent("session-history.json")
+    }
+
+    private init() { load() }
+
+    var todaySessions: [FinishedSession] {
+        sessions.filter { Calendar.current.isDateInToday($0.endedAt) }
+            .sorted { $0.endedAt > $1.endedAt }
+    }
+
+    var todayPulseText: String? {
+        let today = todaySessions
+        guard !today.isEmpty else { return nil }
+        var added = 0, removed = 0
+        for s in today {
+            if let ar = s.addedRemoved { added += ar.added; removed += ar.removed }
+        }
+        let n = today.count
+        var bits = ["\(n) session\(n == 1 ? "" : "s")"]
+        if added > 0 || removed > 0 { bits.append("+\(added) −\(removed)") }
+        return bits.joined(separator: " · ")
+    }
+
+    var recentFilePaths: [String] {
+        var seen = Set<String>()
+        var out: [String] = []
+        for s in todaySessions {
+            for p in s.filePaths where !seen.contains(p) {
+                seen.insert(p)
+                out.append(p)
+                if out.count >= 8 { return out }
+            }
+        }
+        return out
+    }
+
+    func record(pillId: String, name: String, finalLine: String?, summary: String?,
+                filePaths: [String], outcome: String) {
+        let entry = FinishedSession(
+            id: UUID().uuidString,
+            pillId: pillId,
+            name: name,
+            endedAt: Date(),
+            finalLine: finalLine,
+            summary: summary,
+            filePaths: Array(filePaths.prefix(5)),
+            outcome: outcome
+        )
+        sessions.insert(entry, at: 0)
+        prune()
+        save()
+    }
+
+    func prune() {
+        let cutoff = Date().addingTimeInterval(-maxAge)
+        sessions = Array(sessions.filter { $0.endedAt >= cutoff }.prefix(maxEntries))
+    }
+
+    private func load() {
+        guard let data = try? Data(contentsOf: fileURL),
+              let decoded = try? JSONDecoder().decode([FinishedSession].self, from: data) else {
+            sessions = []
+            return
+        }
+        sessions = decoded
+        prune()
+    }
+
+    private func save() {
+        try? FileManager.default.createDirectory(at: HookServer.supportDir,
+                                                 withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(sessions) else { return }
+        try? data.write(to: fileURL, options: .atomic)
+    }
+}
+
+// MARK: - Cursor shell Always allowlist (cwd + command fingerprint)
+
+struct CursorShellAllowEntry: Codable, Equatable, Identifiable {
+    var id: String
+    var cwd: String
+    var command: String
+    var createdAt: Date
+}
+
+enum CursorShellAllowlist {
+    private static let udKey = "cursorShellAllowlist"
+
+    static func fingerprint(cwd: String, command: String) -> String {
+        let norm = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        return "\(cwd)\u{1f}\(norm)"
+    }
+
+    static func load() -> [CursorShellAllowEntry] {
+        guard let data = UserDefaults.standard.data(forKey: udKey),
+              let list = try? JSONDecoder().decode([CursorShellAllowEntry].self, from: data)
+        else { return [] }
+        return list
+    }
+
+    static func save(_ list: [CursorShellAllowEntry]) {
+        if let data = try? JSONEncoder().encode(list) {
+            UserDefaults.standard.set(data, forKey: udKey)
+        }
+    }
+
+    static func contains(cwd: String, command: String) -> Bool {
+        let fp = fingerprint(cwd: cwd, command: command)
+        return load().contains { $0.id == fp }
+    }
+
+    static func add(cwd: String, command: String) {
+        var list = load()
+        let fp = fingerprint(cwd: cwd, command: command)
+        guard !list.contains(where: { $0.id == fp }) else { return }
+        list.insert(CursorShellAllowEntry(id: fp, cwd: cwd, command: command, createdAt: Date()), at: 0)
+        if list.count > 200 { list = Array(list.prefix(200)) }
+        save(list)
+    }
+
+    static func clear() {
+        UserDefaults.standard.removeObject(forKey: udKey)
+    }
+
+    static func remove(id: String) {
+        var list = load()
+        list.removeAll { $0.id == id }
+        save(list)
+    }
 }

@@ -142,9 +142,12 @@ struct OverviewView: View {
             }
             .frame(width: 322)
 
-            // Right card: agent pills
+            // Right card: agent pills (+ Today strip when there are finished sessions)
             CardBackground(wash: nil) {
-                AgentPillsView(state: state)
+                VStack(spacing: 0) {
+                    AgentPillsView(state: state)
+                    TodaySessionsStrip()
+                }
             }
         }
         .onChange(of: state.focusId) { _, new in
@@ -578,11 +581,13 @@ struct ErrorView: View {
 struct FinishedView: View {
     @ObservedObject var state: AppState
 
+    private var pillId: String? { state.focusTask?.id ?? state.focusId }
+
     var body: some View {
         ZStack {
             CardBackground(wash: .green)
             VStack(alignment: .leading, spacing: 5) {
-                AgentWho(task: state.focusTask, label: "Claude Code finished")
+                AgentWho(task: state.focusTask, label: "finished")
                 Text({
                     if let fl = state.focusTask?.finalLine { return fl }
                     if let s = state.focusTask?.steps.last(where: { !$0.isDiffStep }) { return s }
@@ -593,8 +598,8 @@ struct FinishedView: View {
                     .truncationMode(.tail)
                 HStack(spacing: 8) {
                     #if !APPSTORE
-                    PrimaryButton("Open terminal") {
-                        _ = AppLauncher.openTerminal()
+                    PrimaryButton(AppLauncher.openAgentHomeTitle(pillId: pillId)) {
+                        _ = AppLauncher.openAgentHome(pillId: pillId)
                         NotificationCenter.default.post(name: .islandCollapse, object: nil)
                     }
                     #endif
@@ -719,6 +724,33 @@ struct ProgrammingSessionView: View {
                                     .buttonStyle(.plain)
                                     .help(pinned ? "Unpin file" : "Pin file")
                                 }
+                            }
+                        }
+                    }
+                    let todayPaths = SessionHistoryStore.shared.recentFilePaths.filter { path in
+                        !(state.sessionDiffs[pillId] ?? []).contains(where: { $0.path == path })
+                    }
+                    if !todayPaths.isEmpty {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.06))
+                            .frame(height: 1)
+                            .padding(.vertical, 2)
+                        Text("Today")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(Color(hex: "#5F646D"))
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(todayPaths.prefix(4), id: \.self) { path in
+                                Button {
+                                    FileOpener.open(path: path)
+                                } label: {
+                                    Text((path as NSString).lastPathComponent)
+                                        .font(.system(size: 10))
+                                        .foregroundColor(Color(hex: "#8E939C"))
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
+                                .buttonStyle(.plain)
+                                .help(path)
                             }
                         }
                     }
@@ -1080,23 +1112,11 @@ struct DiffCardView: View {
     }
 
     private func openInEditor(_ diff: FileDiff) {
-        let path = diff.path
-        #if !APPSTORE
-        let codePaths = ["/opt/homebrew/bin/code", "/usr/local/bin/code", "/usr/bin/code",
-                         "\(NSHomeDirectory())/.nvm/current/bin/code"]
-        if let codePath = codePaths.first(where: { FileManager.default.fileExists(atPath: $0) }) {
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: codePath)
-            // Write: open at line 1; Edit/MultiEdit: open file without line number
-            p.arguments = diff.isNewFile ? ["-g", "\(path):1"] : [path]
-            try? p.run()
-            return
-        }
-        #endif
-        NSWorkspace.shared.open(URL(fileURLWithPath: path))
+        FileOpener.open(path: diff.path, atLine: diff.isNewFile ? 1 : nil)
     }
 }
 
+/// Minimal keyword tint (no full highlighter) for the programming editor panel.
 /// Minimal keyword tint (no full highlighter) for the programming editor panel.
 struct DiffSyntaxText: View {
     let text: String
@@ -4341,6 +4361,63 @@ struct TickerShimmerText: View {
 }
 
 // MARK: - Agent pills (overview right card)
+
+/// Compact “Today” strip under the pill grid — finished sessions from SessionHistoryStore.
+struct TodaySessionsStrip: View {
+    @ObservedObject private var history = SessionHistoryStore.shared
+
+    private var today: [FinishedSession] { Array(history.todaySessions.prefix(3)) }
+
+    var body: some View {
+        Group {
+            if !today.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.06))
+                        .frame(height: 1)
+                    Text("Today")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(Color(hex: "#5F646D"))
+                    ForEach(today) { s in
+                        Button {
+                            if AppState.shared.tasks.contains(where: { $0.id == s.pillId }) {
+                                AppState.shared.setFocus(s.pillId)
+                            } else {
+                                let mark = s.outcome == "error" ? "✗" : "✓"
+                                let tail = s.summary ?? s.finalLine ?? ""
+                                AppState.shared.noteMessage = tail.isEmpty
+                                    ? "\(mark) \(s.name)"
+                                    : "\(mark) \(s.name) · \(tail)"
+                                NotificationCenter.default.post(name: .hookExpand, object: IslandView.note)
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(s.outcome == "error" ? Color(hex: "#F4505E") : Color(hex: "#22C55E"))
+                                    .frame(width: 4, height: 4)
+                                Text(s.name)
+                                    .font(.system(size: 9))
+                                    .foregroundColor(Color(hex: "#8E939C"))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                Spacer(minLength: 0)
+                                if let summary = s.summary {
+                                    Text(summary)
+                                        .font(.system(size: 8).monospaced())
+                                        .foregroundColor(Color(hex: "#5F646D"))
+                                        .lineLimit(1)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 6)
+            }
+        }
+    }
+}
 
 struct AgentPillsView: View {
     @ObservedObject var state: AppState

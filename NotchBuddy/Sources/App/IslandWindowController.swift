@@ -453,6 +453,14 @@ final class IslandWindowController: NSWindowController {
             #if !APPSTORE
             Self.skipMediaTrack()
             #endif
+
+        case .openLastFile:
+            if let path = AppState.shared.lastOpenableFilePath() {
+                FileOpener.open(path: path)
+            } else {
+                NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.annoyed)
+                SoundEngine.shared.play("error")
+            }
         }
     }
 
@@ -580,12 +588,13 @@ final class IslandWindowController: NSWindowController {
 
     #if !APPSTORE
     private func performJumpToTerminal() {
-        guard state.focusTask != nil else {
+        guard let task = state.focusTask else {
             SoundEngine.shared.play("error")
             NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.annoyed)
             return
         }
-        if !AppLauncher.openTerminal() {
+        // Cursor / Codex → editor; Claude / Gemini / others → terminal.
+        if !AppLauncher.openAgentHome(pillId: task.id) {
             SoundEngine.shared.play("error")
             NotificationCenter.default.post(name: .triggerEmote, object: BotEmote.annoyed)
             return
@@ -653,6 +662,7 @@ final class IslandWindowController: NSWindowController {
         // When "stay collapsed until hover" is on, show a brief compact peek sized to the title width.
         NotificationCenter.default.addObserver(forName: .musicReveal, object: nil, queue: .main) { [weak self] note in
             guard let self else { return }
+            guard AppState.shared.peekOnMusic else { return }
             self.silentNextReveal = true
             if AppState.shared.stayCollapsedUntilHover {
                 #if !APPSTORE

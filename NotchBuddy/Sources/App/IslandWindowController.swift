@@ -213,7 +213,8 @@ final class IslandWindowController: NSWindowController {
         NotificationCenter.default.addObserver(
             forName: .greetComplete, object: nil, queue: .main
         ) { [weak self] _ in
-            self?.fsm.greetComplete()
+            guard let self else { return }
+            MainActor.assumeIsolated { self.fsm.greetComplete() }
         }
 
         fsm.isHeldOpen = { AppState.shared.pendingApproval != nil }
@@ -222,9 +223,10 @@ final class IslandWindowController: NSWindowController {
     // MARK: - 60 Hz polling loop
 
     private func startPolling() {
+        // Timer is on the main RunLoop — call pollFrame directly (no per-frame Task hop).
         frameTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in self.pollFrame() }
+            MainActor.assumeIsolated { self.pollFrame() }
         }
         RunLoop.main.add(frameTimer!, forMode: .common)
     }
@@ -384,6 +386,45 @@ final class IslandWindowController: NSWindowController {
         // Mode is applied by onTransition — don't force .compact when preferring hidden rest.
         fsm.collapse()
         window?.resignKey()
+    }
+
+    /// Music / track change → brief compact peek (called from NC on main queue).
+    private func handleMusicReveal(title: String) {
+        guard AppState.shared.peekOnMusic else { return }
+        silentNextReveal = true
+        if wasInIsland {
+            // Cursor is on the island — grow/keep compact, never arm a timed hide under it.
+            if fsm.state == .hidden { fsm.mouseEntered() }
+            silentNextReveal = false
+            return
+        }
+
+        #if !APPSTORE
+        let compactW = islandSize(mode: .compact, view: .overview,
+                                  nw: AppState.shared.notchWidth,
+                                  nh: AppState.shared.notchHeight).0
+        let seconds = CompactInfoBanner.musicPeekDuration(title: title, islandW: compactW)
+        #else
+        let seconds: TimeInterval = 2.2
+        #endif
+
+        if fsm.state == .hidden || AppState.shared.stayCollapsedUntilHover {
+            fsm.revealBriefly(seconds: seconds)
+        } else if state.mode == .hidden {
+            fsm.reveal()
+        }
+        // Already compact/expanded: ticker updates in place — no size animation needed.
+        silentNextReveal = false
+    }
+
+    private func handleOpenWardrobeFromDesktop() {
+        if state.mode == .expanded && state.view == .wardrobe {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                state.view = .overview
+            }
+        } else {
+            expand(to: .wardrobe)
+        }
     }
 
     // MARK: - Global hot keys (Carbon)
@@ -657,73 +698,45 @@ final class IslandWindowController: NSWindowController {
 
         // Hook server expand requests (alerts only)
         NotificationCenter.default.addObserver(forName: .hookExpand, object: nil, queue: .main) { [weak self] note in
-            guard let self, let view = note.object as? IslandView else { return }
-            self.fsm.openedExternally()
-            self.expand(to: view)
+            // Pull Sendable payload before crossing into MainActor (NC closure is Sendable).
+            guard let view = note.object as? IslandView else { return }
+            guard let self else { return }
+            MainActor.assumeIsolated {
+                self.fsm.openedExternally()
+                self.expand(to: view)
+            }
         }
 
         // Hook server compact reveal (non-alert work events: session start, tool use, etc.)
         NotificationCenter.default.addObserver(forName: .hookReveal, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
-            self.fsm.reveal()
+            MainActor.assumeIsolated { self.fsm.reveal() }
         }
 
         // Music / track change: brief compact peek (no peek sound).
         // Prefer revealBriefly whenever hidden so Stay collapsed / Quiet / Focus still show the track.
         NotificationCenter.default.addObserver(forName: .musicReveal, object: nil, queue: .main) { [weak self] note in
+            let title = (note.object as? String) ?? ""
             guard let self else { return }
-            // Observer closure is Sendable; queue is .main — hop onto the actor synchronously.
-            MainActor.assumeIsolated {
-                guard AppState.shared.peekOnMusic else { return }
-                self.silentNextReveal = true
-                if self.wasInIsland {
-                    // Cursor is on the island — grow/keep compact, never arm a timed hide under it.
-                    if self.fsm.state == .hidden { self.fsm.mouseEntered() }
-                    self.silentNextReveal = false
-                    return
-                }
-
-                #if !APPSTORE
-                let title = (note.object as? String) ?? ""
-                let compactW = islandSize(mode: .compact, view: .overview,
-                                          nw: AppState.shared.notchWidth,
-                                          nh: AppState.shared.notchHeight).0
-                let seconds = CompactInfoBanner.musicPeekDuration(title: title, islandW: compactW)
-                #else
-                let seconds: TimeInterval = 2.2
-                #endif
-
-                if self.fsm.state == .hidden || AppState.shared.stayCollapsedUntilHover {
-                    // Timed compact peek from the smallest strip (or refresh if already peeking).
-                    self.fsm.revealBriefly(seconds: seconds)
-                } else if self.state.mode == .hidden {
-                    self.fsm.reveal()
-                }
-                // Already compact/expanded: ticker updates in place — no size animation needed.
-                self.silentNextReveal = false
-            }
+            MainActor.assumeIsolated { self.handleMusicReveal(title: title) }
         }
 
         // Collapse requests from views (OK button, etc.)
         NotificationCenter.default.addObserver(forName: .islandCollapse, object: nil, queue: .main) { [weak self] _ in
-            self?.collapse()
+            guard let self else { return }
+            MainActor.assumeIsolated { self.collapse() }
         }
 
         // Wardrobe open/close from desktop Mochi right-click (does NOT post .hookExpand)
         NotificationCenter.default.addObserver(forName: .openWardrobeFromDesktop, object: nil, queue: .main) { [weak self] _ in
             guard let self else { return }
-            if self.state.mode == .expanded && self.state.view == .wardrobe {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    self.state.view = .overview
-                }
-            } else {
-                self.expand(to: .wardrobe)
-            }
+            MainActor.assumeIsolated { self.handleOpenWardrobeFromDesktop() }
         }
 
         // .botDizzy — posted by BotEngine.slap() on 3rd hit; show confused view + recover after 3.3s
         NotificationCenter.default.addObserver(forName: .botDizzy, object: nil, queue: .main) { [weak self] _ in
-            self?.handleDizzy()
+            guard let self else { return }
+            MainActor.assumeIsolated { self.handleDizzy() }
         }
 
         // Window attach drag.

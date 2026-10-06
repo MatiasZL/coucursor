@@ -119,8 +119,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                name: .openFullSettings, object: nil)
         // After the greeting ends, fly Mochi back to the desktop if it was there at last quit
         NotificationCenter.default.addObserver(forName: .greetComplete, object: nil, queue: .main) { _ in
-            DesktopMochiController.shared.launchFlyIfNeeded()
-            Self.showBehaviorTipsIfNeeded()
+            MainActor.assumeIsolated {
+                DesktopMochiController.shared.launchFlyIfNeeded()
+                Self.showBehaviorTipsIfNeeded()
+            }
         }
         // End-of-day tip check every 10 minutes after local 18:00
         Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { _ in

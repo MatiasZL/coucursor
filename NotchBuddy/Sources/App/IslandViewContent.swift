@@ -142,12 +142,9 @@ struct OverviewView: View {
             }
             .frame(width: 322)
 
-            // Right card: agent pills (+ Today strip when there are finished sessions)
+            // Right card: agent pills (Today history lives in compact pulse + programming rail, not here)
             CardBackground(wash: nil) {
-                VStack(spacing: 0) {
-                    AgentPillsView(state: state)
-                    TodaySessionsStrip()
-                }
+                AgentPillsView(state: state)
             }
         }
         .onChange(of: state.focusId) { _, new in
@@ -4361,63 +4358,6 @@ struct TickerShimmerText: View {
 }
 
 // MARK: - Agent pills (overview right card)
-
-/// Compact “Today” strip under the pill grid — finished sessions from SessionHistoryStore.
-struct TodaySessionsStrip: View {
-    @ObservedObject private var history = SessionHistoryStore.shared
-
-    private var today: [FinishedSession] { Array(history.todaySessions.prefix(3)) }
-
-    var body: some View {
-        Group {
-            if !today.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.06))
-                        .frame(height: 1)
-                    Text("Today")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(Color(hex: "#5F646D"))
-                    ForEach(today) { s in
-                        Button {
-                            if AppState.shared.tasks.contains(where: { $0.id == s.pillId }) {
-                                AppState.shared.setFocus(s.pillId)
-                            } else {
-                                let mark = s.outcome == "error" ? "✗" : "✓"
-                                let tail = s.summary ?? s.finalLine ?? ""
-                                AppState.shared.noteMessage = tail.isEmpty
-                                    ? "\(mark) \(s.name)"
-                                    : "\(mark) \(s.name) · \(tail)"
-                                NotificationCenter.default.post(name: .hookExpand, object: IslandView.note)
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(s.outcome == "error" ? Color(hex: "#F4505E") : Color(hex: "#22C55E"))
-                                    .frame(width: 4, height: 4)
-                                Text(s.name)
-                                    .font(.system(size: 9))
-                                    .foregroundColor(Color(hex: "#8E939C"))
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                Spacer(minLength: 0)
-                                if let summary = s.summary {
-                                    Text(summary)
-                                        .font(.system(size: 8).monospaced())
-                                        .foregroundColor(Color(hex: "#5F646D"))
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 6)
-            }
-        }
-    }
-}
 
 struct AgentPillsView: View {
     @ObservedObject var state: AppState

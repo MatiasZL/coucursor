@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Hover grows the notch to **compact** (Mochi + ticker) instead of opening the full expanded panel; click still opens fully. With Stay collapsed until hover, leaving the notch shrinks it again after ~0.6 s.
+- Hover grows the notch to **compact** (Mochi + ticker) instead of opening the full expanded panel; click still opens fully. With Stay collapsed until hover, leaving the notch shrinks it again after ~0.6 s. Fixed open/close flicker while the cursor stays on the notch.
 - Settings: **Quit Coucursor** button (sidebar + General → App). Menu bar item also says Quit Coucursor.
 - Coucursor fork: the GitHub macOS build is named **Coucursor** (bundle id unchanged).
 - Chat is **ClinePass only**: Settings → Chat stores a Cline API key (`cline-api-key`); models use `https://api.cline.bot/api/v1` (OpenAI-compatible). Pastille `ai_clinepass`. Other chat providers (Anthropic / Google / OpenAI / Cursor Cloud Agents / Ollama / LM Studio) are removed from this build.

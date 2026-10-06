@@ -189,11 +189,6 @@ final class IslandStateMachine {
         let wait = delay ?? petitToHiddenDelay
         let item = DispatchWorkItem { [weak self] in
             guard let self, self.state == .petit, !(self.isHeldOpen?() ?? false) else { return }
-            // If the cursor is still over the island, mouseEntered will cancel this
-            // on the next poll — but don't hide under an active hover peek.
-            if self.prefersHiddenRest?() == true {
-                // Hover-peek hide is owned by mouseLeft; skip if a later enter cancelled us.
-            }
             self.transition(to: .hidden)
         }
         petitHideWork = item

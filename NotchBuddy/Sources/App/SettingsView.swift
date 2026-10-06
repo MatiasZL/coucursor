@@ -143,6 +143,19 @@ struct SettingsView: View {
                     }
                     .listStyle(.sidebar)
                     .scrollContentBackground(.hidden)
+                    Spacer(minLength: 0)
+                    Divider()
+                    Button {
+                        NSApp.terminate(nil)
+                    } label: {
+                        Label("Quit Coucursor", systemImage: "power")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .help("Quit Coucursor")
                 }
             }
             .frame(width: 200)
@@ -354,6 +367,19 @@ struct SettingsView: View {
             Toggle("Launch at Mac startup", isOn: $launchAtStartup)
                 .onChange(of: launchAtStartup) { _, on in toggleStartup(on) }
                 .padding(6)
+        }
+
+        GroupBox("App") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Coucursor stays in the menu bar. Use Quit to fully close it.")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                Button("Quit Coucursor") {
+                    NSApp.terminate(nil)
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(6)
         }
     }
 

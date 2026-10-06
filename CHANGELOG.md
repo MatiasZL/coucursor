@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Idle CPU: pause the compact ticker when hidden, throttle Mochi’s idle breath to ~8 fps, pause idle mini-pills, and drop the per-frame `Task` hop in the mouse poll loop (was ~20–30 % CPU at rest).
 - Coucursor fork: the GitHub macOS build is named **Coucursor** (bundle id unchanged).
 - Chat is **ClinePass only**: Settings → Chat stores a Cline API key (`cline-api-key`); models use `https://api.cline.bot/api/v1` (OpenAI-compatible). Pastille `ai_clinepass`. Other chat providers (Anthropic / Google / OpenAI / Cursor Cloud Agents / Ollama / LM Studio) are removed from this build.
 - Cursor stays as **hooks only** (Settings → Agents → Cursor Hooks → `~/.cursor/hooks.json`).

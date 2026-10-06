@@ -216,9 +216,10 @@ final class IslandWindowController: NSWindowController {
     // MARK: - 60 Hz polling loop
 
     private func startPolling() {
+        // Timer is on the main RunLoop — call pollFrame directly (no per-frame Task hop).
         frameTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in self.pollFrame() }
+            MainActor.assumeIsolated { self.pollFrame() }
         }
         RunLoop.main.add(frameTimer!, forMode: .common)
     }

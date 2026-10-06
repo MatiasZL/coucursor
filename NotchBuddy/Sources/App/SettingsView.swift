@@ -303,7 +303,7 @@ struct SettingsView: View {
                     Button("Focus") { state.applyBehaviorPreset(.focus) }
                         .buttonStyle(.bordered)
                 }
-                Text("Quiet / Focus = collapsed rest; hover grows the notch, click opens fully. Alive = eyes on + peeks on.")
+                Text("Quiet / Focus = collapsed rest (hover grows notch; song changes still peek). Alive = eyes on + auto-expands.")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }

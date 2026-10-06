@@ -668,30 +668,37 @@ final class IslandWindowController: NSWindowController {
             self.fsm.reveal()
         }
 
-        // Music / track change: reveal silently (no peek sound).
-        // When "stay collapsed until hover" is on, show a brief compact peek sized to the title width.
+        // Music / track change: brief compact peek (no peek sound).
+        // Prefer revealBriefly whenever hidden so Stay collapsed / Quiet / Focus still show the track.
         NotificationCenter.default.addObserver(forName: .musicReveal, object: nil, queue: .main) { [weak self] note in
             guard let self else { return }
             guard AppState.shared.peekOnMusic else { return }
             self.silentNextReveal = true
+            defer { self.silentNextReveal = false }
+
             if self.wasInIsland {
-                // Cursor is on the island — never arm a peek-hide timer under it.
+                // Cursor is on the island — grow/keep compact, never arm a timed hide under it.
                 if self.fsm.state == .hidden { self.fsm.mouseEntered() }
-            } else if AppState.shared.stayCollapsedUntilHover {
-                #if !APPSTORE
-                let title = (note.object as? String) ?? ""
-                let compactW = islandSize(mode: .compact, view: .overview,
-                                          nw: AppState.shared.notchWidth,
-                                          nh: AppState.shared.notchHeight).0
-                let seconds = CompactInfoBanner.musicPeekDuration(title: title, islandW: compactW)
+                return
+            }
+
+            #if !APPSTORE
+            let title = (note.object as? String) ?? ""
+            let compactW = islandSize(mode: .compact, view: .overview,
+                                      nw: AppState.shared.notchWidth,
+                                      nh: AppState.shared.notchHeight).0
+            let seconds = CompactInfoBanner.musicPeekDuration(title: title, islandW: compactW)
+            #else
+            let seconds: TimeInterval = 2.2
+            #endif
+
+            if self.fsm.state == .hidden || AppState.shared.stayCollapsedUntilHover {
+                // Timed compact peek from the smallest strip (or refresh if already peeking).
                 self.fsm.revealBriefly(seconds: seconds)
-                #else
-                self.fsm.revealBriefly(seconds: 2.2)
-                #endif
-            } else {
+            } else if self.state.mode == .hidden {
                 self.fsm.reveal()
             }
-            self.silentNextReveal = false
+            // Already compact/expanded: ticker updates in place — no size animation needed.
         }
 
         // Collapse requests from views (OK button, etc.)

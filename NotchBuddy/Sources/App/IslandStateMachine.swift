@@ -20,14 +20,17 @@ final class IslandStateMachine {
     /// When non-nil and returns true, timers and mouse-leave never auto-collapse or hide the island.
     var isHeldOpen: (() -> Bool)?
 
-    /// When true, rest in `.hidden` (smallest strip) and expand to `.home` on hover;
-    /// non-alert `reveal()` stays silent. Wired from Settings → Stay collapsed until hover.
+    /// When true, rest in `.hidden` (smallest strip); hover grows to `.petit` (compact);
+    /// click (or alerts) open `.home`. Non-alert `reveal()` stays silent.
+    /// Wired from Settings → Stay collapsed until hover.
     var prefersHiddenRest: (() -> Bool)?
 
     /// home → petit delay (seconds). Override for debug.
     var homeToPetitDelay: TimeInterval = 15
     /// petit → hidden delay (seconds). Override for debug.
     var petitToHiddenDelay: TimeInterval = 60
+    /// When preferring hidden rest, how long after mouse-leave before shrinking from compact.
+    var hoverPeekHideDelay: TimeInterval = 0.6
     /// coucou → petit delay after greeting animation ends (no hover). ~0.6s syncs with canvas collapse.
     var greetAutoCollapseDelay: TimeInterval = 0.6
     /// coucou → petit delay when mouse is hovering over the greeting.
@@ -52,22 +55,15 @@ final class IslandStateMachine {
             if isHeldOpen?() == true {
                 // Island already expanded by an external call — sync FSM state without transition
                 state = .home
-            } else if prefersHiddenRest?() == true {
-                // Settings: expand on hover from the smallest strip
-                cancelTimers()
-                transition(to: .home)
             } else {
+                // Grow to compact (bigger notch + Mochi). Full panel opens on click / alert.
                 cancelTimers()
                 transition(to: .petit)
             }
         case .petit:
+            // Stay compact while hovering — do not open the full expanded UI.
             petitHideWork?.cancel()
             petitHideWork = nil
-            if prefersHiddenRest?() == true {
-                // Expand immediately on hover when preferring the collapsed rest state
-                cancelTimers()
-                transition(to: .home)
-            }
         case .home:
             homeCollapseWork?.cancel()
             homeCollapseWork = nil
@@ -83,7 +79,11 @@ final class IslandStateMachine {
         case .hidden:
             break
         case .petit:
-            schedulePetitHide()
+            if prefersHiddenRest?() == true {
+                schedulePetitHide(delay: hoverPeekHideDelay)
+            } else {
+                schedulePetitHide()
+            }
         case .home:
             if isHeldOpen?() != true { scheduleHomeCollapse() }
         case .coucou:
@@ -184,14 +184,15 @@ final class IslandStateMachine {
 
     // MARK: – Timers
 
-    private func schedulePetitHide() {
+    private func schedulePetitHide(delay: TimeInterval? = nil) {
         petitHideWork?.cancel()
+        let wait = delay ?? petitToHiddenDelay
         let item = DispatchWorkItem { [weak self] in
             guard let self, self.state == .petit, !(self.isHeldOpen?() ?? false) else { return }
             self.transition(to: .hidden)
         }
         petitHideWork = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + petitToHiddenDelay, execute: item)
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait, execute: item)
     }
 
     private func scheduleHomeCollapse() {

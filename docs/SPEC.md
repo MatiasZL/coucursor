@@ -41,7 +41,7 @@ Grille compact : pastilles Ø 9,5 autour du point (largeur − 27, hN/2), écart
 6. **Louis absent** (aucun mouvement de souris depuis 3 min, réglable) → `hidden`, même avec des tâches. Au premier mouvement → retour `compact` si des tâches tournent.
 6bis. **Réglages → Behavior** *(Coucursor)* :
     - **Follow cursor when idle** : le `TimelineView` de Mochi reste actif en `hidden` pour le suivi des yeux (sinon pause / 0 % CPU).
-    - **Stay collapsed until hover** : repos en `hidden` même avec des pastilles ; survol → `expanded` ; `reveal` non-alerte reste silencieux ; les alertes forcent toujours l'ouverture.
+    - **Stay collapsed until hover** : repos en `hidden` même avec des pastilles ; survol → `compact` (notch plus grand, pas le panel entier) ; clic → `expanded` ; `reveal` non-alerte reste silencieux ; les alertes forcent toujours l'ouverture.
 7. **Alertes** (permission, question, erreur) : l'island s'ouvre seule sur la vue de l'alerte, **même si Louis est absent**, et reste ouverte (pas de fermeture auto) jusqu'à sa réponse.
 8. **Terminé** : l'island s'ouvre sur la vue `finished` pendant 5,2 s, puis retire la tâche et se replie.
 9. Plusieurs alertes en même temps : file d'attente, une à la fois, l'ordre d'arrivée.

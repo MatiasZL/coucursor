@@ -500,9 +500,10 @@ final class DesktopMochiController {
 
     private func startPolling() {
         frameTimer?.invalidate()
+        // Timer is on the main RunLoop — avoid allocating a Task every frame.
         frameTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
             guard let self else { return }
-            Task { @MainActor in self.pollFrame() }
+            MainActor.assumeIsolated { self.pollFrame() }
         }
         RunLoop.main.add(frameTimer!, forMode: .common)
     }

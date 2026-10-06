@@ -2,13 +2,18 @@
 
 ## Unreleased
 
+- Swift 6 concurrency: NotificationCenter observers extract Sendable payloads before MainActor work (fixes musicReveal / hookExpand data-race build errors).
+- Quiet / Focus presets keep **Peek on music** so a track change still grows the compact notch briefly (they only silence agent/CI expands).
+- Removed the redundant **Today** list under overview pills (repeated agent names). Today memory stays in the compact day pulse, tap pulse → note, programming rail file list, and ⌃⌥E.
+- Hover grows the notch to **compact** (Mochi + ticker) instead of opening the full expanded panel; click still opens fully. With Stay collapsed until hover, leaving the notch shrinks it again after ~0.6 s. Fixed open/close flicker while the cursor stays on the notch.
+- Settings: **Quit Coucursor** button (sidebar + General → App). Menu bar item also says Quit Coucursor.
 - Coucursor fork: the GitHub macOS build is named **Coucursor** (bundle id unchanged).
 - Chat is **ClinePass only**: Settings → Chat stores a Cline API key (`cline-api-key`); models use `https://api.cline.bot/api/v1` (OpenAI-compatible). Pastille `ai_clinepass`. Other chat providers (Anthropic / Google / OpenAI / Cursor Cloud Agents / Ollama / LM Studio) are removed from this build.
 - Cursor stays as **hooks only** (Settings → Agents → Cursor Hooks → `~/.cursor/hooks.json`).
 - **Cursor shell Allow/Deny**: `beforeShellExecution` opens Allow / Deny / Always in the notch (Always = Coucursor allowlist). Wait up to **5 minutes**; timeout or Coucursor down → `ask` in Cursor (never auto-allow). **Update hooks** if the timeout is still short.
 - Finished session card (and ⌃⌥T): **Open Cursor** / **Open Codex** when that agent finished, instead of always opening Terminal.
 - **Focus** behavior preset + toggles: peek on music, expand on finished / programming / CI (alerts always open).
-- **Today** session memory: finished sessions saved locally; day pulse + Overview strip + end-of-day tip after 18:00; tap pulse for the list.
+- **Today** session memory: finished sessions saved locally; day pulse in the compact strip + end-of-day tip after 18:00; tap pulse for the list; recent files in programming view.
 - **⌃⌥E** opens the last / pinned file in the editor; programming rail shows Today files; diffs soft-retain ~1h after SessionEnd.
 - Settings → General: **Click outside to close** (on by default) collapses the expanded notch when you click outside the island.
 - Cursor live diff: `afterFileEdit` / Write / Edit open the notch diff card automatically (typewriter on the new line, strikethrough on removals), same path as Claude Code Edit/Write. The island force-expands so the card is visible while programming.

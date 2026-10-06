@@ -276,7 +276,7 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Toggle("Stay collapsed until hover", isOn: $state.stayCollapsedUntilHover)
-                Text("Keep the island in its smallest state until you hover or click. Alerts still open on their own.")
+                Text("Rest in the smallest strip. Hover grows the notch (compact); click opens the full panel. Alerts still open on their own.")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
                 Toggle("Idle breathing", isOn: $state.idleBreathing)
@@ -303,7 +303,7 @@ struct SettingsView: View {
                     Button("Focus") { state.applyBehaviorPreset(.focus) }
                         .buttonStyle(.bordered)
                 }
-                Text("Quiet / Focus = collapsed + peeks off (alerts still open). Alive = eyes on + peeks on.")
+                Text("Quiet / Focus = collapsed rest; hover grows the notch, click opens fully. Alive = eyes on + peeks on.")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }

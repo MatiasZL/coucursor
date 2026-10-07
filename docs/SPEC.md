@@ -106,7 +106,7 @@ Toutes les pastilles déclarées sont définies dans `PillCatalog.all` (source d
 | `workspace` | Where you code | VS Code, Cursor, Antigravity *(GitHub only)*, Codex *(GitHub only)* | Integration | Claude Code / Cursor / Codex / Agent |
 | `agent` | Agents | Gemini CLI *(GitHub only)* | Agent | Agent |
 | `ai` | AI for the chat | ClinePass (`ai_clinepass`) | Chat | — |
-| `service` | Services | Resend, n8n, Vercel, Render, GitHub, Notion, Cal.com, Stripe, Apple Music *(GitHub only)*, Spotify *(GitHub only)* | Integration | — |
+| `service` | Services | Resend, n8n, Vercel, Render, Codemagic, GitHub, Notion, Cal.com, Stripe, Apple Music *(GitHub only)*, Spotify *(GitHub only)* | Integration | — |
 
 Couleurs : Cursor `#C0C4CC`, Codex `#2DD4BF`, Gemini CLI `#8AB4F8`, Antigravity `#E879F9`, ClinePass = `ChatProvider.clinepass.accentHex` (`#7C5CFF`).
 
@@ -233,7 +233,7 @@ Fenêtre Réglages (SwiftUI, simple), sections dans l'ordre d'affichage :
 - **Gemini CLI Hooks** *(build GitHub)* : état des hooks, bouton Installer / Désinstaller.
 - **Antigravity Hooks** *(build GitHub)* : état des hooks, bouton Installer / Désinstaller.
 - **Cursor Hooks** *(build GitHub)* : état des hooks, bouton Installer / Désinstaller (`~/.cursor/hooks.json`).
-- **Integrations** : clé ou token (Trousseau) pour chaque service (n8n, Stripe, GitHub, Vercel, Resend, Notion, Cal.com).
+- **Integrations** : clé ou token (Trousseau) pour chaque service (n8n, Stripe, GitHub, Vercel, Render, Codemagic, Resend, Notion, Cal.com).
 - **Sound** : son on/off, volume.
 - **Behavior** : fermeture après N s d'inactivité ; masquage après N min sans mouvement ; toggle **Click outside to close** (défaut on) — clic hors du panel en `expanded` → collapse (sauf `isPinned` / hold-open).
 - **Active pills** : pastilles actives (VS Code toujours actif + jusqu'à 4 autres) ; sélecteur de pastille principale (affiché uniquement si une pastille workspace est active) ; liste par catégorie (voir catalogue §5).

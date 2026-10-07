@@ -34,6 +34,8 @@
 		2C798C3837A63B9BB561A1A0 /* HookServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79D8DD79C3DD9BBC584B3CB2 /* HookServer.swift */; };
 		2CC2E3B688B15BBEB3AE3BCE /* WindowContextCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91B733ADC638E14E9BB6EFA /* WindowContextCapture.swift */; };
 		2D7F17539756652438EF7502 /* RenderPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3538A7E3FD2FC8ED0CEDDB /* RenderPoller.swift */; };
+		8F3A2C1E9B704D5A6E1C0D2A /* CodemagicPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3A2C1E9B704D5A6E1C0D2F /* CodemagicPoller.swift */; };
+		D4E8B2A17C903F6E5A1D0B3C /* CodemagicPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3A2C1E9B704D5A6E1C0D2F /* CodemagicPoller.swift */; };
 		CE232F51D1D7D1AB96641D49 /* AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3029CF01A086BB38C4024A13 /* AppLauncher.swift */; };
 		1475F7C0303ADE17D040BDC4 /* AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3029CF01A086BB38C4024A13 /* AppLauncher.swift */; };
 		C1130D031C5BDAD272E39A24 /* SpotifyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC884459AA588058FD2D28C /* SpotifyController.swift */; };
@@ -53,6 +55,7 @@
 		56BE8C733F10A030A638FB60 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1A7D5CBE2AC084A10C5FF3 /* SettingsView.swift */; };
 		5B9A00AFB0837731FA678E4E /* IslandStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8212018F09EA1E96FBD63CD /* IslandStateMachine.swift */; };
 		5C6D0BC8C546718CAA82BF90 /* MusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F142FB3952B5F0639383047 /* MusicController.swift */; };
+		B8C2D3E4F5061728394A5B6C /* LyricsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B1C2D3E4F5061728394A5B /* LyricsService.swift */; };
 		607E548D1DD274CD73FDC290 /* ColorHex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACB4350729C6513824D1ADF /* ColorHex.swift */; };
 		60E361FFE84C387E5E3ED1AA /* SoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BE21C2B315D37AA70ED45E9 /* SoundEngine.swift */; };
 		61CB7049490F61CFA1B36B64 /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F6D7015D6A77AA59323C0E7 /* AppLog.swift */; };
@@ -85,6 +88,7 @@
 		967B525F7D3837F31D740D18 /* ResendPoller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B5FDDE03F5F711146937E2 /* ResendPoller.swift */; };
 		9728564FCBF0334E68E9E6E7 /* SessionPublisher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 824E56D2255CA86DAC350DBF /* SessionPublisher.swift */; };
 		9C653B8291EFFA414565E8A8 /* MusicController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F142FB3952B5F0639383047 /* MusicController.swift */; };
+		C9D3E4F5061728394A5B6C7D /* LyricsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B1C2D3E4F5061728394A5B /* LyricsService.swift */; };
 		9DD56C95ECABDDCE23652D50 /* HookServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79D8DD79C3DD9BBC584B3CB2 /* HookServer.swift */; };
 		9ECEE890D4486B6E83BD5B7F /* ColorHex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACB4350729C6513824D1ADF /* ColorHex.swift */; };
 		A7733EE60694EA3E2A86C37A /* IslandTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0365DDE3C554F5E8570055F4 /* IslandTypes.swift */; };
@@ -154,6 +158,7 @@
 		49E39852175E81C9632A59C9 /* KitPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitPreviewView.swift; sourceTree = "<group>"; };
 		4DC2A07E42245A8CF3BBD2AB /* CoucouAppStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CoucouAppStore.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F142FB3952B5F0639383047 /* MusicController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicController.swift; sourceTree = "<group>"; };
+		A7B1C2D3E4F5061728394A5B /* LyricsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsService.swift; sourceTree = "<group>"; };
 		506824380E9C80B9BC6DCE72 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		61B5FDDE03F5F711146937E2 /* ResendPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResendPoller.swift; sourceTree = "<group>"; };
 		62CF42AE7611EF212CA0458F /* ShortcutsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsSettingsView.swift; sourceTree = "<group>"; };
@@ -182,6 +187,7 @@
 		B32FB972D02162720E566674 /* DiffEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffEngine.swift; sourceTree = "<group>"; };
 		B89DA1A0C21AE3535A1760BB /* N8nPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = N8nPoller.swift; sourceTree = "<group>"; };
 		BA3538A7E3FD2FC8ED0CEDDB /* RenderPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderPoller.swift; sourceTree = "<group>"; };
+		8F3A2C1E9B704D5A6E1C0D2F /* CodemagicPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodemagicPoller.swift; sourceTree = "<group>"; };
 		3029CF01A086BB38C4024A13 /* AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLauncher.swift; sourceTree = "<group>"; };
 		0AC884459AA588058FD2D28C /* SpotifyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotifyController.swift; sourceTree = "<group>"; };
 		BE03E03D1804B0B92C5C2DAD /* NotionPoller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotionPoller.swift; sourceTree = "<group>"; };
@@ -236,10 +242,12 @@
 				D710BD7834228045869D0184 /* IslandWindowController.swift */,
 				8790ACE9F73BD74640A0F20C /* LocalChat.swift */,
 				4F142FB3952B5F0639383047 /* MusicController.swift */,
+				A7B1C2D3E4F5061728394A5B /* LyricsService.swift */,
 				B89DA1A0C21AE3535A1760BB /* N8nPoller.swift */,
 				F1BD8F3CAA60CF37640759E1 /* NotchBuddyApp.swift */,
 				BE03E03D1804B0B92C5C2DAD /* NotionPoller.swift */,
 				BA3538A7E3FD2FC8ED0CEDDB /* RenderPoller.swift */,
+				8F3A2C1E9B704D5A6E1C0D2F /* CodemagicPoller.swift */,
 				0AC884459AA588058FD2D28C /* SpotifyController.swift */,
 				61B5FDDE03F5F711146937E2 /* ResendPoller.swift */,
 				B2FDED98F7F6C755A72C97A3 /* SafeWebURL.swift */,
@@ -490,11 +498,13 @@
 				72B1AEDB2152BF73659EB598 /* MochiStill.swift in Sources */,
 				25F66E99460D62478899A292 /* MochiWardrobe.swift in Sources */,
 				5C6D0BC8C546718CAA82BF90 /* MusicController.swift in Sources */,
+				B8C2D3E4F5061728394A5B6C /* LyricsService.swift in Sources */,
 				0A267EE2955C7AD8E02A296C /* N8nPoller.swift in Sources */,
 				06BF5FD95E03010CAFDBF2D0 /* NotchBuddyApp.swift in Sources */,
 				2F36E3C6C073E968A682AFA4 /* NotionPoller.swift in Sources */,
 				BDD8A210DD6D9DA2D15BC5EE /* PillCatalog.swift in Sources */,
 				FE5441D9C47663D58CB5A973 /* RenderPoller.swift in Sources */,
+				D4E8B2A17C903F6E5A1D0B3C /* CodemagicPoller.swift in Sources */,
 				CE232F51D1D7D1AB96641D49 /* AppLauncher.swift in Sources */,
 				C1130D031C5BDAD272E39A24 /* SpotifyController.swift in Sources */,
 				967B525F7D3837F31D740D18 /* ResendPoller.swift in Sources */,
@@ -573,11 +583,13 @@
 				78F045A55E6F4EEA5787EEEF /* MochiStill.swift in Sources */,
 				A885B7E6DC43231BECE36E3D /* MochiWardrobe.swift in Sources */,
 				9C653B8291EFFA414565E8A8 /* MusicController.swift in Sources */,
+				C9D3E4F5061728394A5B6C7D /* LyricsService.swift in Sources */,
 				160EDB9D06275E2607DA5151 /* N8nPoller.swift in Sources */,
 				DE05D09A32117582AC93A24A /* NotchBuddyApp.swift in Sources */,
 				78FCEDC8F78B683AB10E6529 /* NotionPoller.swift in Sources */,
 				13663D98590927AF71C17628 /* PillCatalog.swift in Sources */,
 				2D7F17539756652438EF7502 /* RenderPoller.swift in Sources */,
+				8F3A2C1E9B704D5A6E1C0D2A /* CodemagicPoller.swift in Sources */,
 				1475F7C0303ADE17D040BDC4 /* AppLauncher.swift in Sources */,
 				213FE39BC218CE0317EFBA06 /* SpotifyController.swift in Sources */,
 				EB23ED9F1C12EA8B54A76A91 /* ResendPoller.swift in Sources */,

@@ -110,6 +110,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if KeychainStore.shared.get("render-api-key") != nil {
             AppState.shared.ensureIntegrationEnabled("integration_render")
         }
+        CodemagicPoller.shared.start()
+        if KeychainStore.shared.get("codemagic-api-token") != nil {
+            AppState.shared.ensureIntegrationEnabled("integration_codemagic")
+        }
         ResendPoller.shared.start()
         GithubPoller.shared.start()
         StripePoller.shared.start()

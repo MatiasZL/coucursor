@@ -1070,7 +1070,21 @@ final class IslandWindowController: NSWindowController {
 
     func defaultView() -> IslandView {
         if state.pendingApproval != nil { return .approval }
-        return state.tasks.isEmpty ? .empty : .overview
+        if state.tasks.isEmpty { return .empty }
+        #if !APPSTORE
+        // Clicking Coucursor while a track is playing opens lyrics.
+        if state.spotifyPlaying,
+           state.activeIntegrations.contains("integration_spotify"),
+           SpotifyController.shared.trackTitle != nil {
+            return .lyrics
+        }
+        if state.musicPlaying,
+           state.activeIntegrations.contains("integration_music"),
+           MusicController.shared.trackTitle != nil {
+            return .lyrics
+        }
+        #endif
+        return .overview
     }
 
     func baseMode() -> IslandMode {

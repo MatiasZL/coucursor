@@ -452,7 +452,8 @@ struct IslandContentView: View {
                     // Views that fill available height instead of the fixed 98pt content frame:
                     // chat (prompt) is always flexible; mail is flexible only when active so
                     // it doesn't push the ZStack taller when inactive.
-                    let isTall = v == .prompt || v == .programming || (v == .mail && active)
+                    let isTall = v == .prompt || v == .programming || v == .lyrics
+                        || (v == .mail && active)
                     let anim: Animation = active
                         ? .spring(response: 0.4, dampingFraction: 0.8).delay(0.16)
                         : .easeIn(duration: 0.16)
@@ -626,7 +627,7 @@ struct ClaudePlanHeaderPill: View {
 
 #if !APPSTORE
 /// Scrolls now-playing, live agent edits, or a short day pulse through the resting strip.
-/// Tap toggles Spotify / Music playback when a track is showing.
+/// Tap on a playing track opens lyrics; play/pause stays on the music card / ⌃⌥P.
 struct CompactInfoBanner: View {
     @ObservedObject var state: AppState
     @ObservedObject private var spotify = SpotifyController.shared
@@ -721,26 +722,18 @@ struct CompactInfoBanner: View {
 
     private func handleTap(_ line: Line) {
         switch line.kind {
-        case .spotify: SpotifyController.shared.playPause()
-        case .music:   MusicController.shared.playPause()
+        case .spotify, .music:
+            // Click while a track is playing → lyrics (play/pause stays on the card / ⌃⌥P).
+            LyricsService.shared.openForNowPlaying()
         case .agent:
             if let id = state.focusTask?.id ?? state.tasks.first(where: { $0.id == "agent_cursor" })?.id {
                 state.setFocus(id)
             }
             NotificationCenter.default.post(name: .hookExpand, object: IslandView.overview)
         case .pulse:
-            let today = SessionHistoryStore.shared.todaySessions
-            if !today.isEmpty {
-                let lines = today.prefix(6).map { s -> String in
-                    let mark = s.outcome == "error" ? "✗" : "✓"
-                    let tail = s.summary ?? s.finalLine ?? ""
-                    return tail.isEmpty ? "\(mark) \(s.name)" : "\(mark) \(s.name) · \(tail)"
-                }
-                state.noteMessage = "Today\n" + lines.joined(separator: "\n")
-                NotificationCenter.default.post(name: .hookExpand, object: IslandView.note)
-            } else {
-                NotificationCenter.default.post(name: .hookExpand, object: IslandView.overview)
-            }
+            // Opening the compact strip must go to overview — not the Today note.
+            // (Tap used to expand IslandView.note with "✓ coucursor…" and stole the open click.)
+            NotificationCenter.default.post(name: .hookExpand, object: IslandView.overview)
         }
     }
 

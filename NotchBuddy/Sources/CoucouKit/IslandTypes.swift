@@ -14,6 +14,8 @@ enum IslandView: String, CaseIterable, Sendable {
     case searching, result, note, settings, greeting, wardrobe
     /// Tall live-diff editor (steps rail + code panel) while an agent edits a file.
     case programming
+    /// Now-playing lyrics (Spotify / Apple Music, GitHub build).
+    case lyrics
 }
 
 // MARK: - Bot State
@@ -145,6 +147,8 @@ enum IslandConst {
         // Greeting: bot drawn by GreetingCanvasView; no BotPlacement needed
         .greeting:  ViewLayout(height: 150, botX: 320, botY: 90,  botDiameter: 0,  agentMode: .none),
         .wardrobe:  ViewLayout(height: 160, botX: 68,  botY: nil, botDiameter: 58, agentMode: .none),
+        // Lyrics: taller so a few lines can scroll under the header
+        .lyrics:    ViewLayout(height: 240, botX: 60,  botY: nil, botDiameter: 50, agentMode: .column),
     ]
 
     // Project colors — keyed by lowercase display name or slug

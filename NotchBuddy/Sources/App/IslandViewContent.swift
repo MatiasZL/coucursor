@@ -248,6 +248,8 @@ struct OverviewView: View {
             _ = AppLauncher.openURL("https://vercel.com/dashboard")
         case "integration_render":
             _ = AppLauncher.openURL("https://dashboard.render.com")
+        case "integration_codemagic":
+            _ = AppLauncher.openURL("https://codemagic.io/apps")
         case "integration_github":
             _ = AppLauncher.openURL("https://github.com/pulls")
         case "integration_n8n":
@@ -2149,6 +2151,7 @@ struct IntegrationCardView: View {
         case "integration_n8n":     return KeychainStore.shared.get("n8n-api-key")    != nil
         case "integration_vercel":  return KeychainStore.shared.get("vercel-token")   != nil
         case "integration_render":  return KeychainStore.shared.get("render-api-key") != nil
+        case "integration_codemagic": return KeychainStore.shared.get("codemagic-api-token") != nil
         case "integration_github":  return KeychainStore.shared.get("github-token")   != nil
         case "integration_stripe":  return KeychainStore.shared.get("stripe-api-key") != nil
         case "integration_notion":  return KeychainStore.shared.get("notion-api-key") != nil
@@ -2166,6 +2169,7 @@ struct IntegrationCardView: View {
             return nil
         case "integration_vercel":  return URL(string: "https://vercel.com/dashboard")
         case "integration_render":  return URL(string: "https://dashboard.render.com")
+        case "integration_codemagic": return URL(string: "https://codemagic.io/apps")
         case "integration_github":  return URL(string: "https://github.com")
         case "integration_stripe":  return URL(string: "https://dashboard.stripe.com/payments")
         case "integration_notion":  return URL(string: "https://notion.so")
@@ -2195,6 +2199,11 @@ struct IntegrationCardView: View {
     // Render with recent deployments
     private var renderHasActivity: Bool {
         task.id == "integration_render" && !appState.renderDeployments.isEmpty
+    }
+
+    // Codemagic with recent builds
+    private var codemagicHasActivity: Bool {
+        task.id == "integration_codemagic" && !appState.codemagicBuilds.isEmpty
     }
 
     // Resend with recent emails
@@ -2327,6 +2336,16 @@ struct IntegrationCardView: View {
             .transition(.opacity)
         } else if renderHasActivity {
             RenderDeploymentListView(deployments: appState.renderDeployments, onOpenDetail: {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { showingDetail = true }
+            })
+            .transition(.opacity)
+        } else if showingDetail && codemagicHasActivity {
+            CodemagicDetailView(build: appState.codemagicBuilds[0]) {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { showingDetail = false }
+            }
+            .transition(.opacity)
+        } else if codemagicHasActivity {
+            CodemagicBuildListView(builds: appState.codemagicBuilds, onOpenDetail: {
                 withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { showingDetail = true }
             })
             .transition(.opacity)
@@ -2900,6 +2919,170 @@ struct RenderDetailView: View {
                     Text(deployment.dashboardURL.replacingOccurrences(of: "https://", with: ""))
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundColor(Color(hex: "#46E3B7").opacity(0.85))
+                        .lineLimit(1).truncationMode(.middle)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 8)
+        .padding(.leading, 108)
+        .padding(.trailing, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Codemagic Build List View
+
+struct CodemagicBuildListView: View {
+    let builds: [CodemagicBuild]
+    let onOpenDetail: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(Color(hex: "#00B2FF"))
+                    .frame(width: 7, height: 7)
+                Text("Codemagic")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F6F8"))
+                Text("Builds")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "#8E939C"))
+            }
+            .padding(.top, 6)
+            .padding(.leading, 108)
+            .padding(.trailing, 36)
+
+            VStack(alignment: .leading, spacing: 3) {
+                if let first = builds.first {
+                    let accent = Color(hex: first.isSuccess ? "#22C55E" : (first.isInProgress ? "#00B2FF" : "#F4505E"))
+                    HStack(spacing: 5) {
+                        Circle().fill(accent).frame(width: 5, height: 5)
+                        Text(first.appName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(Color(hex: "#C5C8CD"))
+                            .lineLimit(1).truncationMode(.tail)
+                            .layoutPriority(1)
+                        if let branch = first.branch ?? first.tag, !branch.isEmpty {
+                            Text(branch)
+                                .font(.system(size: 10))
+                                .foregroundColor(Color(hex: "#6B7079"))
+                                .lineLimit(1)
+                        }
+                        Text(first.timeAgo)
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#6B7079"))
+                        Button(action: onOpenDetail) {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 8, weight: .medium))
+                                .foregroundColor(Color(hex: "#6B7079"))
+                                .frame(width: 18, height: 18)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(accent.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+                }
+
+                ForEach(Array(builds.dropFirst().prefix(2))) { build in
+                    let accent = Color(hex: build.isSuccess ? "#22C55E" : (build.isInProgress ? "#00B2FF" : "#F4505E"))
+                    HStack(spacing: 5) {
+                        Circle().fill(accent).frame(width: 5, height: 5)
+                        Text(build.appName)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(Color(hex: "#9398A1"))
+                            .lineLimit(1).truncationMode(.tail)
+                            .layoutPriority(1)
+                        Text(build.timeAgo)
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#6B7079"))
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(.top, 5)
+            .padding(.leading, 108)
+            .padding(.trailing, 12)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .padding(.top, 4)
+    }
+}
+
+// MARK: - Codemagic Build Detail View
+
+struct CodemagicDetailView: View {
+    let build: CodemagicBuild
+    let onClose: () -> Void
+
+    private var accent: Color {
+        Color(hex: build.isSuccess ? "#22C55E" : (build.isInProgress ? "#00B2FF" : "#F4505E"))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                Button(action: onClose) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(Color(hex: "#6B7079"))
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Circle().fill(accent).frame(width: 6, height: 6)
+                Text(build.appName)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F6F8"))
+                    .lineLimit(1).truncationMode(.middle)
+                    .layoutPriority(1)
+                Spacer(minLength: 2)
+                Text(build.statusLabel)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(accent)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(accent.opacity(0.14))
+                    .clipShape(Capsule())
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                if let workflow = build.workflowName, !workflow.isEmpty {
+                    Text(workflow)
+                        .font(.system(size: 10.5))
+                        .foregroundColor(Color(hex: "#C5C8CD"))
+                        .lineLimit(1)
+                }
+                if let commit = build.commitMessage {
+                    Text(commit)
+                        .font(.system(size: 10.5))
+                        .foregroundColor(Color(hex: "#C5C8CD"))
+                        .lineLimit(2)
+                }
+                HStack(spacing: 8) {
+                    if let branch = build.branch ?? build.tag, !branch.isEmpty {
+                        Text(branch)
+                            .font(.system(size: 10))
+                            .foregroundColor(Color(hex: "#6B7079"))
+                    }
+                    Text(build.timeAgo + " ago")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(hex: "#6B7079"))
+                }
+                Button(action: {
+                    if let url = URL(string: build.buildURL) {
+                        _ = AppLauncher.openURL(url)
+                    }
+                }) {
+                    Text(build.buildURL.replacingOccurrences(of: "https://", with: ""))
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(Color(hex: "#00B2FF").opacity(0.85))
                         .lineLimit(1).truncationMode(.middle)
                 }
                 .buttonStyle(.plain)

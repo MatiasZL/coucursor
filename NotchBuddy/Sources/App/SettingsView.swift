@@ -69,6 +69,7 @@ struct SettingsView: View {
     @State private var n8nKey: String       = KeychainStore.shared.get("n8n-api-key")     ?? ""
     @State private var vercelToken: String  = KeychainStore.shared.get("vercel-token")    ?? ""
     @State private var renderKey: String    = KeychainStore.shared.get("render-api-key")  ?? ""
+    @State private var codemagicToken: String = KeychainStore.shared.get("codemagic-api-token") ?? ""
     @State private var githubToken: String  = KeychainStore.shared.get("github-token")    ?? ""
     @State private var stripeKey: String    = KeychainStore.shared.get("stripe-api-key")  ?? ""
     @State private var calcomKey: String    = KeychainStore.shared.get("calcom-api-key")  ?? ""
@@ -85,6 +86,10 @@ struct SettingsView: View {
     // Render service filter
     @State private var renderServices: [String] = []
     @State private var loadingRender: Bool = false
+
+    // Codemagic app filter
+    @State private var codemagicApps: [String] = []
+    @State private var loadingCodemagic: Bool = false
 
     // n8n workflow filter
     @State private var n8nWorkflows: [String] = []
@@ -762,6 +767,26 @@ struct SettingsView: View {
                     )
                 }
 
+                // Codemagic
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 6) {
+                        Circle().fill(Color(hex: "#00B2FF")).frame(width: 8, height: 8)
+                        Text("Codemagic").font(.system(size: 12, weight: .semibold))
+                    }
+                    SecureField("API token", text: $codemagicToken)
+                        .textFieldStyle(.roundedBorder)
+                    Text("Create one at codemagic.io → Teams → Personal Account → Integrations → Codemagic API.")
+                        .font(.system(size: 10))
+                        .foregroundColor(Color(hex: "#8E939C"))
+                    IntegrationFilterRow(
+                        label: "Apps",
+                        items: codemagicApps,
+                        filter: $state.codemagicAppFilter,
+                        loading: loadingCodemagic,
+                        onLoad: loadCodemagicApps
+                    )
+                }
+
                 // GitHub
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 6) {
@@ -1073,6 +1098,7 @@ struct SettingsView: View {
         saveKey("n8n-api-key",     value: n8nKey)
         saveKey("vercel-token",    value: vercelToken)
         saveKey("render-api-key",  value: renderKey)
+        saveKey("codemagic-api-token", value: codemagicToken)
 
         // Detect GitHub token changes before writing
         let prevGithubToken = KeychainStore.shared.get("github-token")
@@ -1092,15 +1118,21 @@ struct SettingsView: View {
         saveKey("calcom-api-key",  value: calcomKey)
         saveKey("notion-api-key",  value: notionKey)
 
-        // Saving a Render key also turns on the Render pill (frees a keyless slot if at 4/4).
+        // Saving a Render / Codemagic key also turns on the matching pill (frees a keyless slot if at 4/4).
+        statusMessage = "✓ Integration keys saved."
         if !renderKey.isEmpty {
             let on = AppState.shared.ensureIntegrationEnabled("integration_render")
             RenderPoller.shared.pollNow()
             statusMessage = on
                 ? "✓ Render key saved — pill enabled."
                 : "✓ Render key saved — free a slot in Active pills (4/4)."
-        } else {
-            statusMessage = "✓ Integration keys saved."
+        }
+        if !codemagicToken.isEmpty {
+            let on = AppState.shared.ensureIntegrationEnabled("integration_codemagic")
+            CodemagicPoller.shared.pollNow()
+            statusMessage = on
+                ? "✓ Codemagic token saved — pill enabled."
+                : "✓ Codemagic token saved — free a slot in Active pills (4/4)."
         }
     }
 
@@ -1167,6 +1199,37 @@ struct SettingsView: View {
                 self.renderServices = names
                 self.loadingRender = false
                 if names.isEmpty { self.statusMessage = "❌ No Render services found." }
+            }
+        }.resume()
+    }
+
+    // MARK: - Codemagic app list
+
+    private func loadCodemagicApps() {
+        guard let token = KeychainStore.shared.get("codemagic-api-token") else {
+            statusMessage = "❌ Save Codemagic API token first."
+            return
+        }
+        loadingCodemagic = true
+        guard let url = URL(string: "https://api.codemagic.io/apps") else { return }
+        var req = URLRequest(url: url, timeoutInterval: 12)
+        req.setValue(token, forHTTPHeaderField: "x-auth-token")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        URLSession.shared.dataTask(with: req) { data, response, _ in
+            let names: [String]
+            if let data,
+               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let list = root["applications"] as? [[String: Any]] {
+                names = list.compactMap { row -> String? in
+                    (row["appName"] as? String) ?? (row["name"] as? String)
+                }.sorted()
+            } else {
+                names = []
+            }
+            DispatchQueue.main.async {
+                self.codemagicApps = names
+                self.loadingCodemagic = false
+                if names.isEmpty { self.statusMessage = "❌ No Codemagic apps found." }
             }
         }.resume()
     }

@@ -169,6 +169,15 @@ Détail des événements : `docs/AGENTS.md` § Cursor Agent.
 
 ---
 
+## 1quater-bis-b. Codemagic *(build GitHub, macOS)*
+
+- Réglages → Integrations → Codemagic : token API (`codemagic-api-token`, Trousseau, header `x-auth-token`) + filtre d’apps.
+- Polling 30 s : `GET https://api.codemagic.io/apps` puis `GET https://api.codemagic.io/builds` (filtre client-side par app).
+- Pastille `integration_codemagic` (`#00B2FF`) : liste des builds + détail (statut finished/failed/building, workflow, branche, lien `codemagic.io/app/{appId}/build/{buildId}`).
+- Open / ↗ ouvre le dashboard apps ; le détail ouvre l’URL du build.
+
+---
+
 ## 1quater-ter. Spotify *(build GitHub, macOS)*
 
 - Pastille `integration_spotify` (`#1DB954`) : même UX qu'Apple Music (carte now-playing + contrôles play/pause/prev/next dans la pastille au survol).

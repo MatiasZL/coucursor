@@ -301,6 +301,15 @@ final class AppState: ObservableObject {
         }
     }
 
+    // Codemagic app filter — empty = watch all apps
+    @Published var codemagicAppFilter: Set<String> = [] {
+        didSet {
+            if let data = try? JSONEncoder().encode(Array(codemagicAppFilter)) {
+                UserDefaults.standard.set(data, forKey: "codemagicAppFilter")
+            }
+        }
+    }
+
     // n8n workflow filter — empty = watch all workflows
     @Published var n8nWorkflowFilter: Set<String> = [] {
         didSet {
@@ -332,6 +341,9 @@ final class AppState: ObservableObject {
 
     // Render deployments (populated by RenderPoller)
     @Published var renderDeployments: [RenderDeployment] = []
+
+    // Codemagic builds (populated by CodemagicPoller)
+    @Published var codemagicBuilds: [CodemagicBuild] = []
 
     // Resend emails (populated by ResendPoller)
     @Published var resendEmails: [ResendEmail] = []
@@ -521,6 +533,8 @@ final class AppState: ObservableObject {
            let a = try? JSONDecoder().decode([String].self, from: d) { vercelProjectFilter = Set(a) }
         if let d = ud.data(forKey: "renderServiceFilter"),
            let a = try? JSONDecoder().decode([String].self, from: d) { renderServiceFilter = Set(a) }
+        if let d = ud.data(forKey: "codemagicAppFilter"),
+           let a = try? JSONDecoder().decode([String].self, from: d) { codemagicAppFilter = Set(a) }
         if let d = ud.data(forKey: "n8nWorkflowFilter"),
            let a = try? JSONDecoder().decode([String].self, from: d) { n8nWorkflowFilter = Set(a) }
         if let d = ud.data(forKey: "activeIntegrations"),
@@ -717,6 +731,7 @@ final class AppState: ObservableObject {
                 case "integration_n8n":     return KeychainStore.shared.get("n8n-api-key") == nil
                 case "integration_vercel":  return KeychainStore.shared.get("vercel-token") == nil
                 case "integration_render":  return KeychainStore.shared.get("render-api-key") == nil
+                case "integration_codemagic": return KeychainStore.shared.get("codemagic-api-token") == nil
                 case "integration_github":  return KeychainStore.shared.get("github-token") == nil
                 case "integration_stripe":  return KeychainStore.shared.get("stripe-api-key") == nil
                 case "integration_calcom":  return KeychainStore.shared.get("calcom-api-key") == nil
@@ -840,6 +855,58 @@ struct RenderDeployment: Identifiable {
         }
     }
     var dashboardURL: String { "https://dashboard.render.com/web/\(serviceId)" }
+    var timeAgo: String {
+        let diff = Date().timeIntervalSince(createdAt)
+        if diff < 60    { return "just now" }
+        if diff < 3600  { return "\(Int(diff/60))m" }
+        if diff < 86400 { return "\(Int(diff/3600))h" }
+        return "\(Int(diff/86400))d"
+    }
+}
+
+// MARK: - Codemagic
+
+struct CodemagicBuild: Identifiable {
+    let id: String
+    let appId: String
+    let appName: String
+    let status: String
+    let workflowId: String?
+    let workflowName: String?
+    let branch: String?
+    let tag: String?
+    let createdAt: Date
+    let commitMessage: String?
+
+    var isSuccess: Bool { status == "finished" }
+    var isTerminal: Bool {
+        ["finished", "failed", "canceled", "timeout", "skipped", "preparing_failed"]
+            .contains(status)
+    }
+    var isInProgress: Bool {
+        ["initializing", "preparing", "fetching", "building", "testing",
+         "publishing", "finishing", "queued", "waiting"]
+            .contains(status)
+    }
+    var statusLabel: String {
+        switch status {
+        case "finished": return "Finished"
+        case "failed", "preparing_failed": return "Failed"
+        case "canceled": return "Canceled"
+        case "timeout": return "Timeout"
+        case "skipped": return "Skipped"
+        case "building": return "Building"
+        case "testing": return "Testing"
+        case "publishing": return "Publishing"
+        case "finishing": return "Finishing"
+        case "preparing", "fetching", "initializing": return "Preparing"
+        case "queued", "waiting": return "Queued"
+        default: return status.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+    /// Direct build page on Codemagic.
+    var buildURL: String { "https://codemagic.io/app/\(appId)/build/\(id)" }
+    var dashboardURL: String { buildURL }
     var timeAgo: String {
         let diff = Date().timeIntervalSince(createdAt)
         if diff < 60    { return "just now" }

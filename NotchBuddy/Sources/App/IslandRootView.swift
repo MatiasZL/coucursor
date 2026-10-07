@@ -729,18 +729,9 @@ struct CompactInfoBanner: View {
             }
             NotificationCenter.default.post(name: .hookExpand, object: IslandView.overview)
         case .pulse:
-            let today = SessionHistoryStore.shared.todaySessions
-            if !today.isEmpty {
-                let lines = today.prefix(6).map { s -> String in
-                    let mark = s.outcome == "error" ? "✗" : "✓"
-                    let tail = s.summary ?? s.finalLine ?? ""
-                    return tail.isEmpty ? "\(mark) \(s.name)" : "\(mark) \(s.name) · \(tail)"
-                }
-                state.noteMessage = "Today\n" + lines.joined(separator: "\n")
-                NotificationCenter.default.post(name: .hookExpand, object: IslandView.note)
-            } else {
-                NotificationCenter.default.post(name: .hookExpand, object: IslandView.overview)
-            }
+            // Opening the compact strip must go to overview — not the Today note.
+            // (Tap used to expand IslandView.note with "✓ coucursor…" and stole the open click.)
+            NotificationCenter.default.post(name: .hookExpand, object: IslandView.overview)
         }
     }
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Idle CPU: pause the compact ticker when hidden, throttle Mochi’s idle breath to ~8 fps, pause idle mini-pills, and drop the per-frame `Task` hop in the mouse poll loop (was ~20–30 % CPU at rest).
 - Swift 6 concurrency: NotificationCenter observers extract Sendable payloads before MainActor work (fixes musicReveal / hookExpand data-race build errors).
 - Quiet / Focus presets keep **Peek on music** so a track change still grows the compact notch briefly (they only silence agent/CI expands).
 - Removed the redundant **Today** list under overview pills (repeated agent names). Today memory stays in the compact day pulse, tap pulse → note, programming rail file list, and ⌃⌥E.

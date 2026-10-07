@@ -12,10 +12,40 @@ struct BotCanvasView: View {
     // One engine per view instance (main bot)
     @StateObject private var engine = BotEngine()
 
+    /// True when music/Spotify would keep Mochi animating in the resting strip.
+    private var isListening: Bool {
+        #if !APPSTORE
+        let musicOn = AppState.shared.musicPlaying
+            && AppState.shared.activeIntegrations.contains("integration_music")
+        let spotifyOn = AppState.shared.spotifyPlaying
+            && AppState.shared.activeIntegrations.contains("integration_spotify")
+        return musicOn || spotifyOn
+        #else
+        return false
+        #endif
+    }
+
+    /// Hidden + only soft breath → throttle hard (full display-rate redraws were ~20–30 % CPU).
+    private var breathOnlyIdle: Bool {
+        state.mode == .hidden
+            && state.idleBreathing
+            && !state.idleEyeTracking
+            && !isListening
+    }
+
+    /// Spec: hidden ≈ 0 % CPU unless eyes / breath / music need a live canvas.
+    private var timelinePaused: Bool {
+        state.mode == .hidden
+            && !state.idleEyeTracking
+            && !state.idleBreathing
+            && !isListening
+    }
+
     var body: some View {
-        TimelineView(.animation(paused: state.mode == .hidden
-                                        && !state.idleEyeTracking
-                                        && !state.idleBreathing)) { timeline in
+        TimelineView(.animation(
+            minimumInterval: breathOnlyIdle ? (1.0 / 8.0) : nil,
+            paused: timelinePaused
+        )) { timeline in
             Canvas { context, size in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let dtRaw = min(0.05, now - engine.lastTime)
@@ -252,7 +282,11 @@ struct MiniBotCanvasView: View {
     }
 
     var body: some View {
-        TimelineView(.animation) { timeline in
+        // Idle mini pills don't need display-rate redraws — only dance needs a live timeline.
+        TimelineView(.animation(
+            minimumInterval: isDancing ? nil : (1.0 / 4.0),
+            paused: !isDancing && task.state == .idle && task.emote == nil
+        )) { timeline in
             Canvas { context, size in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let dt = min(0.05, now - engine.lastTime)

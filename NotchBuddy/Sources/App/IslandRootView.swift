@@ -746,7 +746,11 @@ struct CompactInfoBanner: View {
 
     @ViewBuilder
     private func marquee(_ line: Line) -> some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: false)) { timeline in
+        // Pause in `.hidden` — a never-pausing 30 Hz ticker was a major idle CPU leak.
+        TimelineView(.animation(
+            minimumInterval: 1.0 / 30.0,
+            paused: state.mode == .hidden
+        )) { timeline in
             let measured = textWidth(line.text)
             let gap: CGFloat = 48
             let cycle = bandWidth + measured + gap

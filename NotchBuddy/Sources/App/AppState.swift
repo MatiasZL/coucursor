@@ -155,7 +155,8 @@ final class AppState: ObservableObject {
             idleEyeTracking = false
             stayCollapsedUntilHover = true
             idleBreathing = false
-            peekOnMusic = false
+            // Song peeks still grow the compact strip briefly — Quiet is about rest size, not silence.
+            peekOnMusic = true
             autoExpandFinished = false
             autoExpandProgramming = false
             autoExpandCI = false
@@ -171,7 +172,8 @@ final class AppState: ObservableObject {
             idleEyeTracking = false
             stayCollapsedUntilHover = true
             idleBreathing = false
-            peekOnMusic = false
+            // Keep track-change peeks; Focus only silences agent/CI expands.
+            peekOnMusic = true
             autoExpandFinished = false
             autoExpandProgramming = false
             autoExpandCI = false

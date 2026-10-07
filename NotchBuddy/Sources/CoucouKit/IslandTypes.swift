@@ -2,13 +2,13 @@ import Foundation
 
 // MARK: - Island Mode
 
-enum IslandMode: String, CaseIterable {
+enum IslandMode: String, CaseIterable, Sendable {
     case hidden, compact, expanded
 }
 
 // MARK: - Island View
 
-enum IslandView: String, CaseIterable {
+enum IslandView: String, CaseIterable, Sendable {
     case overview, empty, approval, question, error, finished
     case confused, upload, uploading, choose, mail, prompt
     case searching, result, note, settings, greeting, wardrobe

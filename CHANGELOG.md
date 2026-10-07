@@ -7,7 +7,7 @@
 - Idle CPU: pause the compact ticker when hidden, throttle Mochi’s idle breath to ~8 fps, pause idle mini-pills, and drop the per-frame `Task` hop in the mouse poll loop (was ~20–30 % CPU at rest).
 - Swift 6 concurrency: NotificationCenter observers extract Sendable payloads before MainActor work (fixes musicReveal / hookExpand data-race build errors).
 - Quiet / Focus presets keep **Peek on music** so a track change still grows the compact notch briefly (they only silence agent/CI expands).
-- Removed the redundant **Today** list under overview pills (repeated agent names). Today memory stays in the compact day pulse, tap pulse → note, programming rail file list, and ⌃⌥E.
+- Removed the redundant **Today** list under overview pills (repeated agent names). Today memory stays in the compact day pulse text, programming rail file list, and ⌃⌥E.
 - Hover grows the notch to **compact** (Mochi + ticker) instead of opening the full expanded panel; click still opens fully. With Stay collapsed until hover, leaving the notch shrinks it again after ~0.6 s. Fixed open/close flicker while the cursor stays on the notch.
 - Settings: **Quit Coucursor** button (sidebar + General → App). Menu bar item also says Quit Coucursor.
 - Coucursor fork: the GitHub macOS build is named **Coucursor** (bundle id unchanged).

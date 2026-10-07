@@ -27,6 +27,12 @@ struct IslandViewContent: View {
         case .settings:     SettingsIslandView(state: state)
         case .greeting:     EmptyView()  // GreetingCanvasView overlaid in IslandRootView
         case .wardrobe:     WardrobeView(state: state)
+        case .lyrics:
+            #if !APPSTORE
+            LyricsView(state: state)
+            #else
+            EmptyView()
+            #endif
         }
     }
 }
@@ -2083,6 +2089,98 @@ struct NoteView: View {
         }
     }
 }
+
+#if !APPSTORE
+// MARK: - Lyrics (now-playing, LRCLIB)
+
+struct LyricsView: View {
+    @ObservedObject var state: AppState
+    @ObservedObject private var lyrics = LyricsService.shared
+
+    private var accent: Color { Color(hex: lyrics.accentHex) }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            CardBackground(wash: nil)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Circle().fill(accent).frame(width: 7, height: 7)
+                    Text(lyrics.title.isEmpty ? "Lyrics" : lyrics.title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F6F8"))
+                        .lineLimit(1).truncationMode(.tail)
+                    if !lyrics.artist.isEmpty {
+                        Text("·")
+                            .font(.system(size: 11))
+                            .foregroundColor(Color(hex: "#6B7079"))
+                        Text(lyrics.artist)
+                            .font(.system(size: 11))
+                            .foregroundColor(Color(hex: "#8E939C"))
+                            .lineLimit(1).truncationMode(.tail)
+                    }
+                    Spacer(minLength: 0)
+                    if lyrics.loading {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .tint(Color(hex: "#8E939C"))
+                    }
+                }
+
+                if lyrics.loading && lyrics.lines.isEmpty {
+                    Text("Looking up lyrics…")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#8E939C"))
+                        .padding(.top, 8)
+                } else if lyrics.instrumental {
+                    Text("Instrumental")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(hex: "#8E939C"))
+                        .padding(.top, 8)
+                } else if let err = lyrics.error, lyrics.lines.isEmpty {
+                    Text(err)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "#8E939C"))
+                        .padding(.top, 8)
+                } else {
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical, showsIndicators: false) {
+                            LazyVStack(alignment: .leading, spacing: 5) {
+                                ForEach(lyrics.lines) { line in
+                                    let active = line.id == lyrics.currentIndex
+                                        && line.time != nil
+                                    Text(line.text)
+                                        .font(.system(size: active ? 13 : 12,
+                                                      weight: active ? .semibold : .regular))
+                                        .foregroundColor(active ? Color(hex: "#F5F6F8")
+                                                               : Color(hex: "#8E939C"))
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .id(line.id)
+                                }
+                            }
+                            .padding(.trailing, 8)
+                            .padding(.bottom, 12)
+                        }
+                        .onChange(of: lyrics.currentIndex) { _, idx in
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                proxy.scrollTo(idx, anchor: .center)
+                            }
+                        }
+                    }
+                    .frame(maxHeight: .infinity, alignment: .top)
+                }
+            }
+            .padding(.leading, 98)
+            .padding(.trailing, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 10)
+        }
+        .onAppear { lyrics.refreshForVisibleView() }
+        .onDisappear { lyrics.stopPositionPolling() }
+        .onChange(of: state.spotifyPlaying) { _, _ in lyrics.refreshForVisibleView() }
+        .onChange(of: state.musicPlaying) { _, _ in lyrics.refreshForVisibleView() }
+    }
+}
+#endif
 
 // MARK: - Integration card (overview left card when an integration pill is focused)
 
@@ -4857,6 +4955,15 @@ struct MusicCardView: View {
                             .foregroundColor(Color(hex: "#8E939C"))
                     }
                     .buttonStyle(.plain)
+                    if controller.trackTitle != nil {
+                        Button(action: { LyricsService.shared.openForNowPlaying() }) {
+                            Image(systemName: "text.quote")
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(hex: "#FA2D48").opacity(0.9))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Lyrics")
+                    }
                     Spacer(minLength: 0)
                 }
                 .padding(.leading, 108)
@@ -5082,6 +5189,15 @@ struct SpotifyCardView: View {
                             .foregroundColor(Color(hex: "#8E939C"))
                     }
                     .buttonStyle(.plain)
+                    if controller.trackTitle != nil {
+                        Button(action: { LyricsService.shared.openForNowPlaying() }) {
+                            Image(systemName: "text.quote")
+                                .font(.system(size: 11))
+                                .foregroundColor(Color(hex: "#1DB954").opacity(0.9))
+                        }
+                        .buttonStyle(.plain)
+                        .help("Lyrics")
+                    }
                     Spacer(minLength: 0)
                 }
                 .padding(.leading, 108)

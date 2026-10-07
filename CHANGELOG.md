@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Click Coucursor while Spotify / Apple Music is playing opens **lyrics** (LRCLIB); synced lines highlight with playback. Quote button on the music cards; play/pause stays on the card / ⌃⌥P.
 - Compact day-pulse tap opens the **overview** again (it was stealing the open click into a Today note of ✓ session names).
 - **Codemagic** integration (MVP): API token in Settings, `integration_codemagic` pill (`#00B2FF`), polls apps/builds every 30s, list/detail with Open to dashboard or build URL.
 - Idle CPU: pause the compact ticker when hidden, throttle Mochi’s idle breath to ~8 fps, pause idle mini-pills, and drop the per-frame `Task` hop in the mouse poll loop (was ~20–30 % CPU at rest).
@@ -16,7 +17,7 @@
 - **Cursor shell Allow/Deny**: `beforeShellExecution` opens Allow / Deny / Always in the notch (Always = Coucursor allowlist). Wait up to **5 minutes**; timeout or Coucursor down → `ask` in Cursor (never auto-allow). **Update hooks** if the timeout is still short.
 - Finished session card (and ⌃⌥T): **Open Cursor** / **Open Codex** when that agent finished, instead of always opening Terminal.
 - **Focus** behavior preset + toggles: peek on music, expand on finished / programming / CI (alerts always open).
-- **Today** session memory: finished sessions saved locally; day pulse in the compact strip + end-of-day tip after 18:00; tap pulse for the list; recent files in programming view.
+- **Today** session memory: finished sessions saved locally; day pulse in the compact strip + end-of-day tip after 18:00; recent files in programming view.
 - **⌃⌥E** opens the last / pinned file in the editor; programming rail shows Today files; diffs soft-retain ~1h after SessionEnd.
 - Settings → General: **Click outside to close** (on by default) collapses the expanded notch when you click outside the island.
 - Cursor live diff: `afterFileEdit` / Write / Edit open the notch diff card automatically (typewriter on the new line, strikethrough on removals), same path as Claude Code Edit/Write. The island force-expands so the card is visible while programming.

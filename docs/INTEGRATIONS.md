@@ -188,6 +188,7 @@ Détail des événements : `docs/AGENTS.md` § Cursor Agent.
 - Pas d'OAuth Web API : contrôle local du client desktop Spotify uniquement.
 - Permission Automatisation → Spotify (macOS). Si refusée (`-1743`), la carte propose d'ouvrir Réglages Système.
 - Mochi danse quand Spotify joue et que la pastille est active (même règles que Music).
+- **Paroles** : clic sur le notch pendant qu’un morceau joue (ou bouton `text.quote` sur la carte) → vue `lyrics` (hauteur 240). Fetch `lrclib.net/api/search` (titre + artiste) ; lignes synchronisées mises en avant via `player position` AppleScript. Play/pause reste sur la carte / ⌃⌥P.
 
 ---
 
